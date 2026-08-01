@@ -1,0 +1,4 @@
+---
+- name: Install node exporter placeholder
+  ansible.builtin.debug:
+    msg: "Prometheus Node Exporter installation should be configured for your AWS environment"

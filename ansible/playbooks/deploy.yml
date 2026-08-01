@@ -1,0 +1,12 @@
+---
+- name: Deploy application
+  hosts: app
+  become: true
+  tasks:
+    - name: Pull latest application code
+      ansible.builtin.git:
+        repo: https://github.com/example/enterprise-python-cicd-platform.git
+        dest: /opt/app
+        version: main
+    - name: Build and run docker container
+      ansible.builtin.command: docker compose -f /opt/app/docker/docker-compose.yml up -d --build

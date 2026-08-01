@@ -1,0 +1,4 @@
+---
+- name: Install CloudWatch agent package placeholder
+  ansible.builtin.debug:
+    msg: "CloudWatch agent installation should be configured for your AWS environment"

@@ -1,0 +1,11 @@
+{
+  "title": "System Metrics",
+  "panels": [
+    {"title": "CPU", "type": "graph"},
+    {"title": "Memory", "type": "graph"},
+    {"title": "Disk", "type": "graph"},
+    {"title": "Network", "type": "graph"},
+    {"title": "Requests", "type": "graph"},
+    {"title": "Latency", "type": "graph"}
+  ]
+}

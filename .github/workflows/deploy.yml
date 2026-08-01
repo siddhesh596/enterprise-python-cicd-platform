@@ -1,0 +1,37 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint
+        run: python -m compileall app
+      - name: Test
+        run: pytest -q
+      - name: Docker Build
+        run: docker build -f docker/Dockerfile -t enterprise-python-cicd-platform:ci .
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+      - name: Terraform validate
+        run: terraform -chdir=terraform init -backend=false && terraform -chdir=terraform validate
+      - name: Terraform plan
+        run: terraform -chdir=terraform plan -input=false -no-color -var='db_password=ChangeMe123!'

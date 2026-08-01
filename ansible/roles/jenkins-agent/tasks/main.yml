@@ -1,0 +1,5 @@
+---
+- name: Ensure jenkins user exists
+  ansible.builtin.user:
+    name: jenkins
+    state: present

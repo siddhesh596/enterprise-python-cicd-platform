@@ -1,0 +1,11 @@
+---
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - git
+      - jq
+      - unzip
+      - python3-pip
+    state: present
+    update_cache: true

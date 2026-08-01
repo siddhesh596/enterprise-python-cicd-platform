@@ -1,0 +1,10 @@
+---
+- name: Rollback application
+  hosts: app
+  become: true
+  tasks:
+    - name: Stop current containers
+      ansible.builtin.command: docker compose -f /opt/app/docker/docker-compose.yml down
+      ignore_errors: true
+    - name: Start previous release
+      ansible.builtin.command: docker compose -f /opt/app/docker/docker-compose.yml up -d
