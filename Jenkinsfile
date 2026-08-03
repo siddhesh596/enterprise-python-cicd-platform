@@ -45,29 +45,26 @@ pipeline {
         sh '''
             . .venv/bin/activate
 
-            echo "========== CURRENT DIRECTORY =========="
+            echo "===== WORKSPACE ====="
             pwd
 
-            echo "========== WORKSPACE =========="
-            echo $WORKSPACE
-
-            echo "========== PYTHON =========="
-            python --version
-
-            echo "========== SYS.PATH =========="
-            python -c "import sys; print('\\n'.join(sys.path))"
-
-            echo "========== ROOT FILES =========="
+            echo "===== FILES ====="
             ls -la
 
-            echo "========== APP FOLDER =========="
-            ls -R app
+            echo "===== APP TREE ====="
+            find app -maxdepth 3
 
-            echo "========== IMPORT TEST =========="
+            echo "===== PYTHON PATH ====="
+            python -c "import sys; print(sys.path)"
+
             export PYTHONPATH=$WORKSPACE
-            python -c "import app; print('app import successful')"
 
-            echo "========== PYTEST =========="
+            echo "===== IMPORT APP ====="
+            python -c "import app; print('app imported successfully')"
+
+            echo "===== IMPORT MAIN ====="
+            python -c "from app.fastapi_app.main import app; print('main imported successfully')"
+
             pytest -v
         '''
     }
