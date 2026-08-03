@@ -1,91 +1,100 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    DOCKER_IMAGE = 'enterprise-python-cicd-platform:latest'
-    AWS_REGION = 'us-east-1'
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
-    stage('Install Dependencies') {
-      steps {
-        sh 'python3 -m pip install --upgrade pip'
-        sh 'pip install -r requirements.txt'
-      }
-    }
-    stage('Run Unit Tests') {
-      steps {
-        sh 'pytest -q'
-      }
-    }
-    stage('Lint') {
-      steps {
-        sh 'python3 -m compileall app'
-      }
-    }
-    stage('Security Scan') {
-      steps {
-        sh 'echo "Security scan placeholder"'
-      }
-    }
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t $DOCKER_IMAGE -f docker/Dockerfile .'
-      }
-    }
-    stage('Push Docker Image') {
-      steps {
-        sh 'echo "Push Docker image to registry"'
-      }
-    }
-    stage('Deploy to Blue Environment') {
-      steps {
-        sh 'echo "Deploying to blue environment"'
-      }
-    }
-    stage('Health Check') {
-      steps {
-        sh 'curl -f http://localhost:8000/health || exit 1'
-      }
-    }
-    stage('Switch ALB Target Group') {
-      steps {
-        sh 'echo "Switching ALB target group"'
-      }
-    }
-    stage('Smoke Test') {
-      steps {
-        sh 'curl -f http://localhost:8000/docs >/dev/null'
-      }
-    }
-    stage('Approval') {
-      steps {
-        input message: 'Approve deployment?'
-      }
-    }
-    stage('Cleanup') {
-      steps {
-        sh 'echo "Cleaning up old containers"'
-      }
-    }
-  }
-
- post {
-    always {
-        echo 'Pipeline Finished'
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    success {
-        echo 'Build Successful'
+    environment {
+        VENV = ".venv"
     }
 
-    failure {
-        echo 'Build Failed'
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify Python') {
+            steps {
+                sh '''
+                    python3 --version
+                    python3 -m pip --version
+                '''
+            }
+        }
+
+        stage('Create Virtual Environment') {
+            steps {
+                sh '''
+                    python3 -m venv ${VENV}
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    . ${VENV}/bin/activate
+                    python -m pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh '''
+                    . ${VENV}/bin/activate
+                    pytest
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker compose build
+                '''
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                    docker compose down || true
+                    docker compose up -d
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                    sleep 20
+                    curl --fail http://localhost:8000/health
+                '''
+            }
+        }
+
     }
-  }
+
+    post {
+
+        always {
+            cleanWs()
+        }
+
+        success {
+            echo 'CI/CD Pipeline Completed Successfully'
+        }
+
+        failure {
+            echo 'Pipeline Failed'
+        }
+    }
 }

@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:16
@@ -20,12 +22,12 @@ services:
       timeout: 5s
       retries: 5
 
-    restart: always
+    restart: unless-stopped
 
   api:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
 
     container_name: enterprise-python-api
 
@@ -39,7 +41,7 @@ services:
       postgres:
         condition: service_healthy
 
-    restart: always
+    restart: unless-stopped
 
 volumes:
   postgres_data:
