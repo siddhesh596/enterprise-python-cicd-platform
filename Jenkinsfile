@@ -8,17 +8,14 @@ pipeline {
     }
 
     environment {
-        PROJECT_DIR = "/home/ec2-user/enterprise-python-cicd-platform"
-        VENV = ".venv"
+        DEPLOY_DIR = "/opt/enterprise-python-cicd-platform"
     }
 
     stages {
 
-        stage('Checkout Source') {
+        stage('Checkout') {
             steps {
-                dir("${PROJECT_DIR}") {
-                    checkout scm
-                }
+                checkout scm
             }
         }
 
@@ -31,42 +28,42 @@ pipeline {
             }
         }
 
-        stage('Create Virtual Environment') {
-            steps {
-                dir("${PROJECT_DIR}") {
-                    sh '''
-                        python3 -m venv ${VENV}
-                    '''
-                }
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                dir("${PROJECT_DIR}") {
-                    sh '''
-                        . ${VENV}/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                    '''
-                }
+                sh '''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                dir("${PROJECT_DIR}") {
-                    sh '''
-                        . ${VENV}/bin/activate
-                        pytest
-                    '''
-                }
+                sh '''
+                    . .venv/bin/activate
+                    pytest
+                '''
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Sync Deployment Files') {
             steps {
-                dir("${PROJECT_DIR}") {
+                sh '''
+                    mkdir -p ${DEPLOY_DIR}
+
+                    rsync -av --delete \
+                    --exclude=".git" \
+                    --exclude=".venv" \
+                    ./ ${DEPLOY_DIR}/
+                '''
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir("${DEPLOY_DIR}") {
                     sh 'docker compose build'
                 }
             }
@@ -74,9 +71,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                dir("${PROJECT_DIR}") {
+                dir("${DEPLOY_DIR}") {
                     sh '''
-                        docker compose down
+                        docker compose down || true
                         docker compose up -d
                     '''
                 }
@@ -91,16 +88,17 @@ pipeline {
                 '''
             }
         }
+
     }
 
     post {
 
         success {
-            echo 'Application deployed successfully!'
+            echo "Deployment Successful"
         }
 
         failure {
-            echo 'Pipeline failed!'
+            echo "Deployment Failed"
         }
 
         always {
