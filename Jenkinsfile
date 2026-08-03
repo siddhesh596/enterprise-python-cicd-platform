@@ -9,6 +9,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR = "/opt/enterprise-python-cicd-platform"
+        PYTHONPATH = "${WORKSPACE}"
     }
 
     stages {
@@ -22,7 +23,7 @@ pipeline {
         stage('Verify Python') {
             steps {
                 sh '''
-                    python3 --version
+                    python3.12 --version
                     python3 -m pip --version
                 '''
             }
@@ -40,13 +41,37 @@ pipeline {
         }
 
         stage('Run Tests') {
-            steps {
-                sh '''
-                    . .venv/bin/activate
-                    pytest
-                '''
-            }
-        }
+    steps {
+        sh '''
+            . .venv/bin/activate
+
+            echo "========== CURRENT DIRECTORY =========="
+            pwd
+
+            echo "========== WORKSPACE =========="
+            echo $WORKSPACE
+
+            echo "========== PYTHON =========="
+            python --version
+
+            echo "========== SYS.PATH =========="
+            python -c "import sys; print('\\n'.join(sys.path))"
+
+            echo "========== ROOT FILES =========="
+            ls -la
+
+            echo "========== APP FOLDER =========="
+            ls -R app
+
+            echo "========== IMPORT TEST =========="
+            export PYTHONPATH=$WORKSPACE
+            python -c "import app; print('app import successful')"
+
+            echo "========== PYTEST =========="
+            pytest -v
+        '''
+    }
+}
 
         stage('Sync Deployment Files') {
             steps {
