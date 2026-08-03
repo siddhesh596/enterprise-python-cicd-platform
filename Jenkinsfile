@@ -8,14 +8,17 @@ pipeline {
     }
 
     environment {
+        PROJECT_DIR = "/home/ec2-user/enterprise-python-cicd-platform"
         VENV = ".venv"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Source') {
             steps {
-                checkout scm
+                dir("${PROJECT_DIR}") {
+                    checkout scm
+                }
             }
         }
 
@@ -30,45 +33,53 @@ pipeline {
 
         stage('Create Virtual Environment') {
             steps {
-                sh '''
-                    python3 -m venv ${VENV}
-                '''
+                dir("${PROJECT_DIR}") {
+                    sh '''
+                        python3 -m venv ${VENV}
+                    '''
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    . ${VENV}/bin/activate
-                    python -m pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+                dir("${PROJECT_DIR}") {
+                    sh '''
+                        . ${VENV}/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    '''
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh '''
-                    . ${VENV}/bin/activate
-                    pytest
-                '''
+                dir("${PROJECT_DIR}") {
+                    sh '''
+                        . ${VENV}/bin/activate
+                        pytest
+                    '''
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker compose build
-                '''
+                dir("${PROJECT_DIR}") {
+                    sh 'docker compose build'
+                }
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy') {
             steps {
-                sh '''
-                    docker compose down || true
-                    docker compose up -d
-                '''
+                dir("${PROJECT_DIR}") {
+                    sh '''
+                        docker compose down
+                        docker compose up -d
+                    '''
+                }
             }
         }
 
@@ -80,21 +91,20 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
 
-        always {
-            cleanWs()
-        }
-
         success {
-            echo 'CI/CD Pipeline Completed Successfully'
+            echo 'Application deployed successfully!'
         }
 
         failure {
-            echo 'Pipeline Failed'
+            echo 'Pipeline failed!'
+        }
+
+        always {
+            cleanWs()
         }
     }
 }
