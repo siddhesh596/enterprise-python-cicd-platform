@@ -75,10 +75,17 @@ pipeline {
     }
   }
 
-  post {
+ post {
+    always {
+        echo 'Pipeline Finished'
+    }
+
+    success {
+        echo 'Build Successful'
+    }
+
     failure {
-      sh 'echo "Rolling back deployment"'
-      sh 'bash scripts/rollback.sh'
+        echo 'Build Failed'
     }
   }
 }
