@@ -79,13 +79,22 @@ pipeline {
         }
 
         stage('Deploy Application') {
-            steps {
-                sh '''
-                    docker compose down || true
+    steps {
+        sh '''
+        DEPLOY_DIR=/opt/enterprise-python-cicd-platform
 
-                    docker compose up -d
-                '''
-            }
+        mkdir -p $DEPLOY_DIR
+
+        rsync -av --delete ./ $DEPLOY_DIR/
+
+        cd $DEPLOY_DIR
+
+        docker compose down || true
+
+        docker compose up -d --build
+        '''
+    }
+}
         }
 
         stage('Show Running Containers') {
