@@ -3,12 +3,11 @@ pipeline {
 
     options {
         timestamps()
-        disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
     environment {
-    DEPLOY_DIR = "/var/lib/jenkins/deploy"
+        PYTHON = "python3"
+        VENV = ".venv"
     }
 
     stages {
@@ -22,7 +21,7 @@ pipeline {
         stage('Verify Python') {
             steps {
                 sh '''
-                    python3.12 --version
+                    python3 --version
                     python3 -m pip --version
                 '''
             }
@@ -31,97 +30,66 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    python3.12 -m venv .venv
+                    python3 -m venv .venv
+
                     . .venv/bin/activate
+
                     pip install --upgrade pip
+
                     pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Run Tests') {
-    steps {
-        sh '''
-            . .venv/bin/activate
+            steps {
+                sh '''
+                    . .venv/bin/activate
 
-            echo "===== WORKSPACE ====="
-            pwd
+                    export PYTHONPATH=$WORKSPACE
 
-            echo "===== FILES ====="
-            ls -la
-
-            echo "===== APP TREE ====="
-            find app -maxdepth 3
-
-            echo "===== PYTHON PATH ====="
-            python -c "import sys; print(sys.path)"
-
-            export PYTHONPATH=$WORKSPACE
-
-            echo "===== IMPORT APP ====="
-            python -c "import app; print('app imported successfully')"
-
-            echo "===== IMPORT MAIN ====="
-            python -c "from app.fastapi_app.main import app; print('main imported successfully')"
-
-            pytest -v
-        '''
-    }
-}
-
-        stage('Sync Deployment Files') {
-    steps {
-        sh '''
-            mkdir -p $DEPLOY_DIR
-
-            rsync -av --delete \
-              --exclude=.git \
-              --exclude=.venv \
-              ./ $DEPLOY_DIR/
-        '''
-    }
- }
+                    pytest -v
+                '''
+            }
+        }
 
         stage('Docker Build') {
-    steps {
-        dir("${DEPLOY_DIR}") {
-            sh '''
-                docker compose build
-            '''
+            steps {
+                sh '''
+                    docker compose build
+                '''
+            }
         }
-    }
-}
 
         stage('Deploy') {
-    steps {
-        dir("${DEPLOY_DIR}") {
-            sh '''
-                docker compose down || true
-                docker compose up -d
-            '''
+            steps {
+                sh '''
+                    docker compose down || true
+
+                    docker compose up -d
+                '''
+            }
         }
-    }
-}
 
-       stage('Health Check') {
-    steps {
-        sh '''
-            sleep 15
-            curl -f http://localhost:8000/health
-        '''
-    }
-}
+        stage('Health Check') {
+            steps {
+                sh '''
+                    sleep 15
 
+                    curl -f http://localhost:8000/health
+                '''
+            }
+        }
     }
 
     post {
 
         success {
-            echo "Deployment Successful"
+            echo "Deployment Successful!"
         }
 
         failure {
-            echo "Deployment Failed"
+            echo "Deployment Failed!"
         }
 
         always {
