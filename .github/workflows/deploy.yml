@@ -20,8 +20,14 @@ jobs:
           pip install -r requirements.txt
       - name: Lint
         run: python -m compileall app
-      - name: Test
-        run: pytest -q
+      - - name: Run Tests
+  env:
+    PYTHONPATH: ${{ github.workspace }}
+  run: |
+    echo "Workspace: $GITHUB_WORKSPACE"
+    python -c "import sys; print(sys.path)"
+    python -c "import app"
+    pytest -q
       - name: Docker Build
         run: docker build -f docker/Dockerfile -t enterprise-python-cicd-platform:ci .
 
