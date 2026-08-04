@@ -1,11 +1,11 @@
 module "network" {
   source = "./modules/network"
 
-  project_name = var.project_name
-  environment  = var.environment
-  aws_region   = var.aws_region
-  vpc_cidr     = var.vpc_cidr
-  public_subnets = var.public_subnets
+  project_name    = var.project_name
+  environment     = var.environment
+  aws_region      = var.aws_region
+  vpc_cidr        = var.vpc_cidr
+  public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
 }
 
@@ -19,12 +19,12 @@ module "iam" {
 module "database" {
   source = "./modules/database"
 
-  project_name      = var.project_name
-  environment       = var.environment
-  vpc_id            = module.network.vpc_id
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
-  db_username       = var.db_username
-  db_password       = var.db_password
+  db_username        = var.db_username
+  db_password        = var.db_password
 }
 
 module "alb" {
