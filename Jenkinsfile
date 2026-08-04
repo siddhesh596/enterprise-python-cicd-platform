@@ -8,8 +8,7 @@ pipeline {
     }
 
     environment {
-        DEPLOY_DIR = "/opt/enterprise-python-cicd-platform"
-        PYTHONPATH = "${WORKSPACE}"
+    DEPLOY_DIR = "/var/lib/jenkins/deploy"
     }
 
     stages {
@@ -71,45 +70,47 @@ pipeline {
 }
 
         stage('Sync Deployment Files') {
-            steps {
-                sh '''
-                    mkdir -p ${DEPLOY_DIR}
+    steps {
+        sh '''
+            mkdir -p $DEPLOY_DIR
 
-                    rsync -av --delete \
-                    --exclude=".git" \
-                    --exclude=".venv" \
-                    ./ ${DEPLOY_DIR}/
-                '''
-            }
-        }
+            rsync -av --delete \
+              --exclude=.git \
+              --exclude=.venv \
+              ./ $DEPLOY_DIR/
+        '''
+    }
+ }
 
         stage('Docker Build') {
-            steps {
-                dir("${DEPLOY_DIR}") {
-                    sh 'docker compose build'
-                }
-            }
+    steps {
+        dir("${DEPLOY_DIR}") {
+            sh '''
+                docker compose build
+            '''
         }
+    }
+}
 
         stage('Deploy') {
-            steps {
-                dir("${DEPLOY_DIR}") {
-                    sh '''
-                        docker compose down || true
-                        docker compose up -d
-                    '''
-                }
-            }
+    steps {
+        dir("${DEPLOY_DIR}") {
+            sh '''
+                docker compose down || true
+                docker compose up -d
+            '''
         }
+    }
+}
 
-        stage('Health Check') {
-            steps {
-                sh '''
-                    sleep 20
-                    curl --fail http://localhost:8000/health
-                '''
-            }
-        }
+       stage('Health Check') {
+    steps {
+        sh '''
+            sleep 15
+            curl -f http://localhost:8000/health
+        '''
+    }
+}
 
     }
 
