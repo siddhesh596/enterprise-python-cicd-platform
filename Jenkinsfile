@@ -78,16 +78,12 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
+       stage('Deploy Application') {
     steps {
         sh '''
-        DEPLOY_DIR=/opt/enterprise-python-cicd-platform
+        cd /home/ec2-user/enterprise-python-cicd-platform
 
-        mkdir -p $DEPLOY_DIR
-
-        rsync -av --delete ./ $DEPLOY_DIR/
-
-        cd $DEPLOY_DIR
+        git pull origin main
 
         docker compose down || true
 
