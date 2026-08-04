@@ -12,9 +12,7 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.app.name
   }
 
-  user_data = base64encode(templatefile("${path.module}/../../userdata/ec2-userdata.sh", {
-    app_name = var.project_name
-  }))
+ user_data = filebase64("${path.module}/../../userdata/ec2-userdata.sh")
 }
 
 resource "aws_autoscaling_group" "app" {
