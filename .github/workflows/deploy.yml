@@ -69,6 +69,3 @@ jobs:
 
       - name: Terraform Validate
         run: terraform -chdir=terraform validate
-
-      - name: Terraform Plan
-        run: terraform -chdir=terraform plan -input=false -no-color -var="db_password=ChangeMe123!"
