@@ -81,13 +81,17 @@ pipeline {
        stage('Deploy Application') {
     steps {
         sh '''
-        cd /home/ec2-user/enterprise-python-cicd-platform
+            DEPLOY_DIR=/opt/enterprise-python-cicd-platform
 
-        git pull origin main
+            mkdir -p $DEPLOY_DIR
 
-        docker compose down || true
+            rsync -av --delete ./ $DEPLOY_DIR/
 
-        docker compose up -d --build
+            cd $DEPLOY_DIR
+
+            docker compose down || true
+
+            docker compose up -d --build
         '''
     }
 }
@@ -96,6 +100,7 @@ pipeline {
         stage('Show Running Containers') {
             steps {
                 sh '''
+                    cd /opt/enterprise-python-cicd-platform  || true
                     docker ps
                 '''
             }
@@ -128,7 +133,7 @@ pipeline {
             echo '==================================='
 
             sh '''
-                docker ps -a || true
+                cd /opt/enterprise-python-cicd-platform  || true
 
                 docker compose logs || true
             '''
