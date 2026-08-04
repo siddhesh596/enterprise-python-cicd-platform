@@ -3,11 +3,13 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     environment {
-        PYTHON = "python3"
+        PYTHON = "python3.12"
         VENV = ".venv"
+        PYTHONPATH = "${WORKSPACE}"
     }
 
     stages {
@@ -21,8 +23,27 @@ pipeline {
         stage('Verify Python') {
             steps {
                 sh '''
-                    python3 --version
-                    python3 -m pip --version
+                    echo "===== Python Version ====="
+                    ${PYTHON} --version
+
+                    echo "===== Pip Version ====="
+                    ${PYTHON} -m pip --version
+                '''
+            }
+        }
+
+        stage('Create Virtual Environment') {
+            steps {
+                sh '''
+                    rm -rf ${VENV}
+
+                    ${PYTHON} -m venv ${VENV}
+
+                    . ${VENV}/bin/activate
+
+                    python --version
+
+                    python -m pip install --upgrade pip
                 '''
             }
         }
@@ -30,11 +51,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    python3 -m venv .venv
-
-                    . .venv/bin/activate
-
-                    pip install --upgrade pip
+                    . ${VENV}/bin/activate
 
                     pip install -r requirements.txt
                 '''
@@ -44,16 +61,16 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    . .venv/bin/activate
+                    . ${VENV}/bin/activate
 
-                    export PYTHONPATH=$WORKSPACE
+                    export PYTHONPATH=${WORKSPACE}
 
                     pytest -v
                 '''
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
                     docker compose build
@@ -61,7 +78,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Application') {
             steps {
                 sh '''
                     docker compose down || true
@@ -71,12 +88,22 @@ pipeline {
             }
         }
 
+        stage('Show Running Containers') {
+            steps {
+                sh '''
+                    docker ps
+                '''
+            }
+        }
+
         stage('Health Check') {
             steps {
                 sh '''
+                    echo "Waiting for application..."
+
                     sleep 15
 
-                    curl -f http://localhost:8000/health
+                    curl --fail http://localhost:8000/health
                 '''
             }
         }
@@ -85,11 +112,21 @@ pipeline {
     post {
 
         success {
-            echo "Deployment Successful!"
+            echo '==================================='
+            echo 'Deployment Successful!'
+            echo '==================================='
         }
 
         failure {
-            echo "Deployment Failed!"
+            echo '==================================='
+            echo 'Deployment Failed!'
+            echo '==================================='
+
+            sh '''
+                docker ps -a || true
+
+                docker compose logs || true
+            '''
         }
 
         always {
