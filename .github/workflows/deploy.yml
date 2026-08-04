@@ -2,42 +2,73 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install dependencies
+          python-version: "3.12"
+
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+
+      - name: Verify Project Structure
+        run: |
+          pwd
+          ls -R
+          python -c "import sys; print(sys.path)"
+          python -c "import app"
+
       - name: Lint
-        run: python -m compileall app
-      - - name: Run Tests
-  env:
-    PYTHONPATH: ${{ github.workspace }}
-  run: |
-    echo "Workspace: $GITHUB_WORKSPACE"
-    python -c "import sys; print(sys.path)"
-    python -c "import app"
-    pytest -q
-      - name: Docker Build
-        run: docker build -f docker/Dockerfile -t enterprise-python-cicd-platform:ci .
+        run: |
+          python -m compileall app
+
+      - name: Run Tests
+        run: |
+          pytest -q
+
+      - name: Build Docker Image
+        run: |
+          docker build -t enterprise-python-cicd-platform:ci .
 
   terraform:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Terraform fmt
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Terraform Format
         run: terraform fmt -check -recursive
-      - name: Terraform validate
-        run: terraform -chdir=terraform init -backend=false && terraform -chdir=terraform validate
-      - name: Terraform plan
-        run: terraform -chdir=terraform plan -input=false -no-color -var='db_password=ChangeMe123!'
+
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+
+      - name: Terraform Plan
+        run: terraform -chdir=terraform plan -input=false -no-color -var="db_password=ChangeMe123!"
