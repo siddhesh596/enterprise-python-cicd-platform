@@ -25,9 +25,21 @@ services:
     restart: unless-stopped
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  image: 571850512217.dkr.ecr.ap-south-1.amazonaws.com/enterprise-python-api:latest
+
+  container_name: enterprise-python-api
+
+  ports:
+    - "8000:8000"
+
+  environment:
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/enterprise_db
+
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+  restart: always
 
     container_name: enterprise-python-api
 

@@ -70,13 +70,23 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh '''
-                    docker compose build
-                '''
-            }
-        }
+       stage('Build & Push Docker Image') {
+    steps {
+        sh '''
+            docker build -t enterprise-python-api:latest .
+
+            docker tag enterprise-python-api:latest \
+            571850512217.dkr.ecr.ap-south-1.amazonaws.com/enterprise-python-api:latest
+
+            aws ecr get-login-password --region ap-south-1 | \
+            docker login --username AWS --password-stdin \
+            571850512217.dkr.ecr.ap-south-1.amazonaws.com
+
+            docker push \
+            571850512217.dkr.ecr.ap-south-1.amazonaws.com/enterprise-python-api:latest
+        '''
+    }
+}
 
        stage('Deploy Application') {
     steps {
