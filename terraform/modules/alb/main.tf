@@ -1,12 +1,12 @@
 resource "aws_lb" "main" {
-  name               = "${var.project_name}-${var.environment}-alb"
+  name               = "epcp-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = var.public_subnet_ids
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-alb"
+    Name = "epcp-tg"
   }
 }
 
