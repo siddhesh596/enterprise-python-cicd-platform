@@ -8,16 +8,40 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_db_instance" "postgres" {
-  allocated_storage      = 20
-  engine                 = "postgres"
-  engine_version         = "15.5"
-  instance_class         = "db.t3.micro"
-  db_name                = "enterprise_db"
-  username               = var.db_username
-  password               = var.db_password
-  skip_final_snapshot    = true
-  publicly_accessible    = false
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+
+  identifier = "${var.project_name}-${var.environment}-postgres"
+
+  allocated_storage = 20
+  max_allocated_storage = 100
+
+  engine = "postgres"
+  engine_version = "15.5"
+
+  instance_class = "db.t3.micro"
+
+  db_name = "enterprise_db"
+
+  username = var.db_username
+  password = var.db_password
+
+  port = 5432
+
+  publicly_accessible = false
+
+  multi_az = false
+
+  storage_encrypted = true
+
+  deletion_protection = false
+
+  backup_retention_period = 7
+
+  auto_minor_version_upgrade = true
+
+  skip_final_snapshot = true
+
+  db_subnet_group_name = aws_db_subnet_group.main.name
+
   vpc_security_group_ids = [aws_security_group.rds.id]
 
   tags = {
