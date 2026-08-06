@@ -11,7 +11,7 @@ terraform {
   backend "s3" {
     bucket = "your-terraform-state-bucket"
     key    = "enterprise-python-cicd-platform/terraform.tfstate"
-    region = "us-east-1"
+    region = "ap-south-1"
   }
 }
 
